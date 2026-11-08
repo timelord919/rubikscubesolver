@@ -1,34 +1,35 @@
 const express = require("express");
+const path = require("path");
 const Cube = require("cubejs");
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 let solverReady = false;
-
-app.get("/", (_req, res) => {
-  res.send("Rubik's Cube Solver is running.");
-});
 
 app.post("/solve", (req, res) => {
   try {
     const facelets = req.body.facelets;
 
     if (typeof facelets !== "string") {
-      return res.status(400).json({ error: 'Send {"facelets":"..."} in JSON.' });
+      return res.status(400).json({ error: "Enter the cube state." });
     }
 
     const state = facelets.replace(/\s/g, "").toUpperCase();
 
     if (state.length !== 54 || !/^[URFDLB]{54}$/.test(state)) {
       return res.status(400).json({
-        error: "Enter exactly 54 face letters: U, R, F, D, L, B."
+        error: "Enter exactly 54 letters: U, R, F, D, L, B."
       });
     }
 
     for (const face of "URFDLB") {
-      if ([...state].filter((letter) => letter === face).length !== 9) {
-        return res.status(400).json({ error: `Use exactly 9 ${face}'s.` });
+      const count = [...state].filter((letter) => letter === face).length;
+      if (count !== 9) {
+        return res.status(400).json({
+          error: `Use exactly 9 ${face} letters.`
+        });
       }
     }
 
