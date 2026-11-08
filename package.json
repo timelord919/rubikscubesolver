@@ -1,0 +1,11 @@
+{
+  "name": "rubiks-cube-solver",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A validated 3x3 Rubik's Cube solver for Node.js",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "solve": "node src/index.js"
+  }
+}
