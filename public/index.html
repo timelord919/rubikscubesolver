@@ -7,89 +7,170 @@
   <style>
     body {
       font: 16px system-ui, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 0 16px;
-      background: #f4f6f8;
+      max-width: 680px;
+      margin: 30px auto;
+      padding: 16px;
+      background: #f3f5f7;
       color: #17202a;
     }
+
     main {
       background: white;
       padding: 24px;
-      border-radius: 12px;
+      border-radius: 14px;
+      text-align: center;
     }
-    textarea {
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 120px;
-      padding: 12px;
-      font: 16px monospace;
+
+    .cube {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      max-width: 430px;
+      margin: 24px auto;
     }
-    button {
-      margin: 12px 8px 12px 0;
-      padding: 10px 16px;
+
+    .face {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      position: relative;
+      padding-top: 22px;
+    }
+
+    .face::before {
+      content: attr(data-face);
+      position: absolute;
+      top: 0;
+      left: 0;
+      font-weight: bold;
+    }
+
+    .U { grid-column: 2; grid-row: 1; }
+    .L { grid-column: 1; grid-row: 2; }
+    .F { grid-column: 2; grid-row: 2; }
+    .R { grid-column: 3; grid-row: 2; }
+    .B { grid-column: 4; grid-row: 2; }
+    .D { grid-column: 2; grid-row: 3; }
+
+    .sticker {
+      aspect-ratio: 1;
+      border: 2px solid #222;
+      border-radius: 5px;
+      cursor: pointer;
+      min-width: 0;
+    }
+
+    .sticker:disabled {
+      cursor: default;
+      border-color: #777;
+    }
+
+    button.action {
+      padding: 10px 18px;
+      margin: 5px;
       cursor: pointer;
     }
+
     #result {
-      white-space: pre-wrap;
+      min-height: 2em;
       overflow-wrap: anywhere;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <main>
     <h1>Rubik’s Cube Solver</h1>
-    <p>
-      Enter 54 face letters in this order:
-      <code>U R F D L B</code>, nine stickers per face.
-    </p>
+    <p>Click stickers to change their colors. Centers are fixed.</p>
 
-    <label for="facelets">Cube state</label>
-    <textarea id="facelets" placeholder="54 letters: U, R, F, D, L, B"></textarea>
+    <div id="cube" class="cube"></div>
 
-    <br>
-    <button id="solve">Solve cube</button>
-    <button id="example" type="button">Load solved example</button>
+    <button class="action" id="solve">Solve</button>
+    <button class="action" id="reset">Reset cube</button>
 
-    <h2>Solution</h2>
-    <p id="result">Your solution will appear here.</p>
+    <p id="result">Set up your cube, then press Solve.</p>
   </main>
 
   <script>
-    const input = document.getElementById("facelets");
-    const result = document.getElementById("result");
+    const faces = ["U", "R", "F", "D", "L", "B"];
+    const displayOrder = ["U", "L", "F", "R", "B", "D"];
+    const colors = {
+      U: "#ffffff",
+      R: "#e53935",
+      F: "#20a44b",
+      D: "#ffeb3b",
+      L: "#ff8c00",
+      B: "#2878d0"
+    };
 
-    document.getElementById("example").addEventListener("click", () => {
-      input.value =
-        "UUUUUUUUU" +
-        "RRRRRRRRR" +
-        "FFFFFFFFF" +
-        "DDDDDDDDD" +
-        "LLLLLLLLL" +
-        "BBBBBBBBB";
-    });
+    let cube;
+
+    function resetCube() {
+      cube = Object.fromEntries(
+        faces.map(face => [face, Array(9).fill(face)])
+      );
+      drawCube();
+      document.getElementById("result").textContent =
+        "Set up your cube, then press Solve.";
+    }
+
+    function drawCube() {
+      const container = document.getElementById("cube");
+      container.replaceChildren();
+
+      for (const face of displayOrder) {
+        const faceElement = document.createElement("div");
+        faceElement.className = `face ${face}`;
+        faceElement.dataset.face = face;
+
+        cube[face].forEach((colorFace, index) => {
+          const sticker = document.createElement("button");
+          sticker.className = "sticker";
+          sticker.style.backgroundColor = colors[colorFace];
+          sticker.setAttribute("aria-label", `${face} sticker ${index + 1}`);
+
+          if (index === 4) {
+            sticker.disabled = true;
+          } else {
+            sticker.addEventListener("click", () => {
+              const current = faces.indexOf(cube[face][index]);
+              cube[face][index] = faces[(current + 1) % faces.length];
+              drawCube();
+            });
+          }
+
+          faceElement.appendChild(sticker);
+        });
+
+        container.appendChild(faceElement);
+      }
+    }
+
+    document.getElementById("reset").addEventListener("click", resetCube);
 
     document.getElementById("solve").addEventListener("click", async () => {
+      const result = document.getElementById("result");
       result.textContent = "Solving…";
+
+      const facelets = faces.map(face => cube[face].join("")).join("");
 
       try {
         const response = await fetch("/solve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ facelets: input.value })
+          body: JSON.stringify({ facelets })
         });
 
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not solve cube.");
 
-        if (!response.ok) {
-          throw new Error(data.error || "Could not solve this cube.");
-        }
-
-        result.textContent = data.solution;
+        result.textContent = `Solution: ${data.solution}`;
       } catch (error) {
         result.textContent = `Error: ${error.message}`;
       }
     });
+
+    resetCube();
   </script>
 </body>
 </html>
