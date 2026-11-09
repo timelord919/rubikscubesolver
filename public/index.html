@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -21,12 +22,33 @@
       text-align: center;
     }
 
+    .palette {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin: 18px 0 28px;
+    }
+
+    .swatch {
+      width: 46px;
+      height: 46px;
+      border: 3px solid #555;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .swatch.selected {
+      outline: 4px solid #111;
+      outline-offset: 3px;
+    }
+
     .cube {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       max-width: 430px;
-      margin: 24px auto;
+      margin: 20px auto;
     }
 
     .face {
@@ -54,10 +76,10 @@
 
     .sticker {
       aspect-ratio: 1;
+      min-width: 0;
       border: 2px solid #222;
       border-radius: 5px;
       cursor: pointer;
-      min-width: 0;
     }
 
     .sticker:disabled {
@@ -65,7 +87,7 @@
       border-color: #777;
     }
 
-    button.action {
+    .action {
       padding: 10px 18px;
       margin: 5px;
       cursor: pointer;
@@ -81,19 +103,21 @@
 <body>
   <main>
     <h1>Rubik’s Cube Solver</h1>
-    <p>Click stickers to change their colors. Centers are fixed.</p>
+    <p>Choose a color below, then click stickers to paint them.</p>
 
+    <div id="palette" class="palette"></div>
     <div id="cube" class="cube"></div>
 
     <button class="action" id="solve">Solve</button>
-    <button class="action" id="reset">Reset cube</button>
+    <button class="action" id="reset">Reset</button>
 
-    <p id="result">Set up your cube, then press Solve.</p>
+    <p id="result">Choose colors for your cube, then press Solve.</p>
   </main>
 
   <script>
     const faces = ["U", "R", "F", "D", "L", "B"];
     const displayOrder = ["U", "L", "F", "R", "B", "D"];
+
     const colors = {
       U: "#ffffff",
       R: "#e53935",
@@ -103,7 +127,39 @@
       B: "#2878d0"
     };
 
+    const colorNames = {
+      U: "White",
+      R: "Red",
+      F: "Green",
+      D: "Yellow",
+      L: "Orange",
+      B: "Blue"
+    };
+
     let cube;
+    let selectedColor = "U";
+
+    const palette = document.getElementById("palette");
+
+    for (const face of faces) {
+      const swatch = document.createElement("button");
+      swatch.className = "swatch";
+      swatch.style.backgroundColor = colors[face];
+      swatch.title = `${colorNames[face]} (${face})`;
+      swatch.setAttribute("aria-label", `Select ${colorNames[face]}`);
+
+      swatch.addEventListener("click", () => {
+        selectedColor = face;
+        document.querySelectorAll(".swatch").forEach(item => {
+          item.classList.remove("selected");
+        });
+        swatch.classList.add("selected");
+      });
+
+      palette.appendChild(swatch);
+    }
+
+    palette.firstElementChild.classList.add("selected");
 
     function resetCube() {
       cube = Object.fromEntries(
@@ -111,7 +167,7 @@
       );
       drawCube();
       document.getElementById("result").textContent =
-        "Set up your cube, then press Solve.";
+        "Choose colors for your cube, then press Solve.";
     }
 
     function drawCube() {
@@ -133,8 +189,7 @@
             sticker.disabled = true;
           } else {
             sticker.addEventListener("click", () => {
-              const current = faces.indexOf(cube[face][index]);
-              cube[face][index] = faces[(current + 1) % faces.length];
+              cube[face][index] = selectedColor;
               drawCube();
             });
           }
