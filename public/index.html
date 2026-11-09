@@ -161,6 +161,16 @@
 
     palette.firstElementChild.classList.add("selected");
 
+    function showFacelets(facelets) {
+  cube = Object.fromEntries(
+    faces.map((face, i) => [
+      face,
+      facelets.slice(i * 9, i * 9 + 9).split("")
+    ])
+  );
+  drawCube();
+}
+    
     function resetCube() {
       cube = Object.fromEntries(
         faces.map(face => [face, Array(9).fill(face)])
