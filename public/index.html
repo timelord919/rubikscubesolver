@@ -229,9 +229,21 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Could not solve cube.");
 
-        result.textContent = `Solution: ${data.solution}`;
-      } catch (error) {
-        result.textContent = `Error: ${error.message}`;
+      if (data.steps.length === 0) {
+  result.textContent = "Cube is already solved!";
+  return;
+}
+
+for (let i = 0; i < data.steps.length; i++) {
+  const step = data.steps[i];
+  showFacelets(step.facelets);
+  result.textContent =
+    `Move ${i + 1} of ${data.steps.length}: ${step.move}`;
+
+  await new Promise(resolve => setTimeout(resolve, 700));
+}
+
+result.textContent = `Solved! Moves: ${data.solution}`;
       }
     });
 
